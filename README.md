@@ -1,8 +1,8 @@
 # HTB-Working-With-IDS-IPS
 This is a compilation of my notes for this module
 
-### Intro to IDS/IPS
-#### Notes
+## Intro to IDS/IPS
+### Notes
 IDS vs IPS
 - Intrusion Detection System:
   - Monitors network traffic for suspicious activity
@@ -43,8 +43,8 @@ Role of SIEM
   - Correlate events to detect advanced or coordinated attacks
   - Provide a centralized view of network security
 
-### Suricata Fundamentals
-#### Notes
+## Suricata Fundamentals
+### Notes
 What is it?
 - An open-source tool for network security
 - Used in IDS, IPS, and Network Security Monitoring (NSM)
@@ -283,7 +283,7 @@ Extra Note: Detecting Anomalies
 - Refer to the Protocol Anomalies Detection section in Suricata’s docs
 - This improves visibility and security against protocol misuse.
 
-#### Walkthrough
+### Walkthrough
 Q1. Filter out only HTTP events from /var/log/suricata/old_eve.json using the the jq command-line JSON processor. Enter the flow_id that you will come across as your answer.
 - Open Powershell and SSH to the target, once in, enter the password
   - ssh htb-student@<Target IP>
