@@ -406,3 +406,20 @@ Q1. In the /home/htb-student directory of this section's target, there is a file
   - sudo cat /var/log/suricata/fast.log
 - Keep playing around until alarm is not raised anymore and the minimum is found.
 - Answer is: 4
+
+## Suricata Rule Dev Pt. 2
+### Notes
+Although encryption hides payloads, valuable metadata remains visible. Two key tools for detecting threats in encrypted traffic are:
+- SSL/TLS Certificate Analysis
+  - SSL certificates (shared during the handshake) contain unencrypted metadata like issuer, subject, and expiration
+  - Suspicious domains often have odd or uncommon certificate details, which can be used to write detection rules
+- JA3 Fingerprinting
+  - JA3 generates a unique fingerprint of SSL/TLS client behavior from the Client Hello packet
+  - Malware often uses distinct JA3 hashes, making them useful for identifying malicious encrypted traffic
+- These techniques help craft Suricata rules that detect threats even without decrypting the traffic.
+
+### Walkthrough
+Q1. There is a file named trickbot.pcap in the /home/htb-student/pcaps directory, which contains network traffic related to a certain variation of the Trickbot malware. Enter the precise string that should be specified in the content keyword of the rule with sid 100299 within the local.rules file so that an alert is triggered as your answer.
+- Get the JA3 Digest of trickbot.pcap
+  - ja3 -a --json /home/htb-student/pcaps/trickbot.pcap
+- Answer is: 72a589da586844d7f0818ce684948eea
