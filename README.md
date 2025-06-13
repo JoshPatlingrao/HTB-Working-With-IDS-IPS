@@ -309,3 +309,80 @@ Q2. Enable the http-log output in suricata.yaml and run Suricata against /home/h
   - cat http.log
   - Read through the logs to see the .php page that's requested.
 - Answer is: app.php
+
+## Suricata Rule Dev Pt. 1
+### Notes
+Suricata Rules
+- Suricata rules instruct the engine to watch for specific patterns in network traffic
+- They’re used for:
+  - Detecting malicious behavior
+  - Providing contextual network insights (e.g., tracking specific activity)
+- Rules can be broad or specific depending on detection goals
+- Well-crafted rules balance detection coverage vs. false positives
+- Rule creation often relies on threat intelligence and community-shared indicators
+- Each rule consumes system resources (CPU & RAM)
+
+Suricata Rule Anatomy
+- General Rule Format: action protocol from_ip port -> to_ip port (rule options)
+- Header Section: The header of a rule defines the action, protocol, IP addresses, ports, and traffic direction for how the rule should be applied.
+  - action: tells Suricata what to do if contents match
+    - alert: generates alert
+    - log: log traffic without an alert
+    - pass: ignore the packet
+    - drop: drop packet in IPS mode
+    - reject: send TCP RST packets
+  - protocol: tcp, udp, icmp, http, dns, etc.
+  - directionality: ->, <-, <>
+    - Uses rule host variables: $HOME_NET, $EXTERNAL_NET
+    - Example:
+      - Outbound: $HOME_NET any -> $EXTERNAL_NET 9090
+      - Inbound: $EXTERNAL_NET any -> $HOME_NET 8443
+      - Bidirectional: $EXTERNAL_NET any <> $HOME_NET any
+    - Rule ports define the ports at which the traffic for this rule will be evaluated
+- Rule Message & Content: The message and content section specifies the alert message to display when a rule is triggered and defines the traffic patterns considered important for detection.
+  - Message: shown when rule is triggered. Should describe malware name/type or behavior.
+    - Flow: specifies the initiator and responder of the connection and ensures the rule monitors only established TCP sessions
+      - E.g. alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"Potential HTTP-based attack"; flow:established,to_server; sid:1003;)
+    - DSize: matches based on the payload size of a packet, using the TCP segment length, not the total packet length
+      - E.g. alert http any any -> any any (msg:"Large HTTP response"; dsize:>10000; content:"HTTP/1.1 200 OK"; sid:2003;)
+  - Rule Content: contains unique values used to identify specific traffic, which Suricata matches in packet payloads for detection
+    - Rule Buffers: limit content matching to specific parts of a packet, improving efficiency by reducing unnecessary searches
+      - E.g. alert http any any -> any any (http.accept; content:"image/gif"; sid:1;)
+        - http.accept: Sticky buffer to match on the HTTP Accept header. Only contains the header value. The \r\n after the header are not part of the buffer.
+    - Rule Options: act as additional modifiers to aid detection, helping Suricata locate the exact location of contents
+      - nocase: ensures rules are not bypassed through case changes
+      - offset: informs Suricata about the start position inside the packet for matching
+        - E.g. alert tcp any any -> any any (msg:"Detect specific protocol command"; content:"|01 02 03|"; offset:0; depth:5; sid:3003;)
+          - This rule alerts when a specific byte sequence (|01 02 03|) is found at the start of the TCP payload.
+          - The offset:0 keyword sets the content match to start from the beginning of the payload, and depth:5 specifies a length of five bytes to be considered for matching
+      - distance: tells Suricata to look for the specified content 'n' bytes relative to the previous match
+        - E.g. alert tcp any any -> any any (msg:"Detect suspicious URL path"; content:"/admin"; offset:4; depth:10; distance:20; within:50; sid:3001;)
+          - This rule alerts when the string /admin is found in the TCP payload, starting at byte 5 (offset:4) within a 10-byte window (depth:10).
+          - It uses distance:20 to skip 20 bytes after a prior match and within:50 to ensure the match happens within the next 50 bytes.
+  - Rule Metadata
+    - reference: links the rule to its original source
+    - sid: is a unique identifier for managing and distinguishing rules
+    - revision: shows the rule's version history and any updates made
+- Pearl Compatible Regular Expression (PCRE): uses regular expressions for advanced matching, written between forward slashes with optional flags at the end. Use anchors for position control and escape special characters as needed. Avoid creating rules that rely only on PCRE.
+  - E.g. alert http any any -> $HOME_NET any (msg: "ATTACK [PTsecurity] Apache Continuum <= v1.4.2 CMD Injection"; content: "POST"; http_method; content: "/continuum/saveInstallation.action"; offset: 0; depth: 34; http_uri; content: "installation.varValue="; nocase; http_client_body; pcre: !"/^\$?[\sa-z\\_0-9.-]*(\&|$)/iRP"; flow: to_server, established;sid: 10000048; rev: 1;)
+    - Rule triggers on HTTP traffic (alert http) from any source and destination to any port on the home network (any any -> $HOME_NET any)
+    - The msg field gives a description of what the alert is for, namely ATTACK [PTsecurity] Apache Continuum <= v1.4.2 CMD Injection
+    - The rule checks for the POST string in the HTTP method using the content and http_method keywords. The rule will match if the HTTP method used is a POST request
+    - The content keyword with http_uri matches the URI /continuum/saveInstallation.action, starting at offset 0 with a depth of 34, targeting a specific Apache Continuum endpoint
+    - Another content keyword searches for installation.varValue= in the HTTP client body, using nocase for case-insensitive matching, potentially detecting command injection payloads
+    - PCRE in this case was used to implement Perl Compatible Regular Expressions
+      - ^ marks the start of the line
+      - \$? checks for an optional dollar sign at the start
+      - [\sa-z\\_0-9.-]* matches zero or more (*) of the characters in the set. The set includes:
+        - \s a space
+        - a-z any lowercase letter
+        - \\ a backslash
+        - _ an underscore
+        - 0-9 any digit
+        - . a period
+        - - a hyphen
+        - (\&|$) checks for either an ampersand or the end of the line
+        - /iRP at the end indicates this is an inverted match (meaning the rule triggers when the match does not occur), case insensitive (i), and relative to the buffer position (RP).
+    - The flow keyword specifies that the rule triggers on established, inbound traffic directed toward the server.
+- Refer to: https://docs.suricata.io/en/latest/rules/index.html
+  - For more infor on Suricata rules
