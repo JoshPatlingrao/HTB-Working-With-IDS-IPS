@@ -392,3 +392,6 @@ Creating IDS/IPS rules involves both technical expertise and threat awareness
 - Signature-based detection uses known patterns, like commands or strings, to identify specific malware with high accuracy, but can't detect new threats
 - Behavior-based detection looks for anomalous activity (e.g., unusual response sizes or traffic patterns) to catch unknown or zero-day attacks, but may produce more false positives
 - Stateful protocol analysis tracks protocol state and flags unexpected behavior, offering deeper insight into malicious activity within normal-looking traffic.
+
+### Walkthrough
+Q1. Filter out only HTTP events from /var/log/suricata/old_eve.json using the the jq command-line JSON processor. Enter the flow_id that you will come across as your answer.
