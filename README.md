@@ -394,4 +394,14 @@ Creating IDS/IPS rules involves both technical expertise and threat awareness
 - Stateful protocol analysis tracks protocol state and flags unexpected behavior, offering deeper insight into malicious activity within normal-looking traffic.
 
 ### Walkthrough
-Q1. Filter out only HTTP events from /var/log/suricata/old_eve.json using the the jq command-line JSON processor. Enter the flow_id that you will come across as your answer.
+Q1. In the /home/htb-student directory of this section's target, there is a file called local.rules. Within this file, there is a rule with sid 2024217, which is associated with the MS17-010 exploit. Additionally, there is a PCAP file named eternalblue.pcap in the /home/htb-student/pcaps directory, which contains network traffic related to MS17-010. What is the minimum offset value that can be set to trigger an alert?
+- Open the rules and adjust the offset. Hint: go lower.
+  - sudo nano /home/htb-student/local.rules
+- Reset Suricata so the rules will apply.
+  - sudo systemctl restart suricata
+- Run Suricata on the .pcap file
+  - sudo suricata -r /home/htb-student/pcaps/eternalblue.pcap -k none -l .
+- Check the fast.log file to see if the alarm raised or not
+  - sudo cat /var/log/suricata/fast.log
+- Keep playing around until alarm is not raised anymore and the minimum is found.
+- Answer is: 4
