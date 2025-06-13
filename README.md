@@ -380,7 +380,8 @@ Suricata Rule Anatomy
         - _ an underscore
         - 0-9 any digit
         - . a period
-        - - a hyphen
+        - '-' a hyphen
+          - Speech marks shouldn't be there. Only done since it messes up formatting
         - (\&|$) checks for either an ampersand or the end of the line
         - /iRP at the end indicates this is an inverted match (meaning the rule triggers when the match does not occur), case insensitive (i), and relative to the buffer position (RP).
     - The flow keyword specifies that the rule triggers on established, inbound traffic directed toward the server.
