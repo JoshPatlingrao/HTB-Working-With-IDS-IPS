@@ -385,4 +385,10 @@ Suricata Rule Anatomy
         - /iRP at the end indicates this is an inverted match (meaning the rule triggers when the match does not occur), case insensitive (i), and relative to the buffer position (RP).
     - The flow keyword specifies that the rule triggers on established, inbound traffic directed toward the server.
 - Refer to: https://docs.suricata.io/en/latest/rules/index.html
-  - For more infor on Suricata rules
+  - For more info on Suricata rules
+
+IDS/IPS Rule Development Approaches
+Creating IDS/IPS rules involves both technical expertise and threat awareness
+- Signature-based detection uses known patterns, like commands or strings, to identify specific malware with high accuracy, but can't detect new threats
+- Behavior-based detection looks for anomalous activity (e.g., unusual response sizes or traffic patterns) to catch unknown or zero-day attacks, but may produce more false positives
+- Stateful protocol analysis tracks protocol state and flags unexpected behavior, offering deeper insight into malicious activity within normal-looking traffic.
