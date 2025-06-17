@@ -423,3 +423,38 @@ Q1. There is a file named trickbot.pcap in the /home/htb-student/pcaps directory
 - Get the JA3 Digest of trickbot.pcap
   - ja3 -a --json /home/htb-student/pcaps/trickbot.pcap
 - Answer is: 72a589da586844d7f0818ce684948eea
+
+## Snort Fundamentals
+### Notes
+What is Snort?
+Snort is an open-source Intrusion Detection and Prevention System (IDS/IPS) that can also operate as a packet sniffer or logger. Like Suricata, it inspects network traffic in depth using custom rule sets that define what to detect and how to respond.
+
+Modes of Operation:
+- Passive IDS: Observes traffic without interfering
+  - -r (read from pcap) or -i (interface) → Passive by default
+- Inline IDS/IPS: Can detect and block malicious traffic
+  - -Q → Enables Inline mode (if supported, e.g., with afpacket on Linux)
+- NIDS: Analyzes traffic across the network
+- HIDS: Technically possible, but not recommended
+
+Snort Architecture Components:
+- Packet Decoder – Extracts and understands raw packet data
+- Preprocessors – Analyze and categorize traffic (e.g., HTTP parsing, port scan detection)
+- Detection Engine – Compares traffic against rule sets for matches
+- Logging & Alerting System – Records alerts/logs when matches are found
+- Output Modules – Define how and where to store alerts (e.g., syslog, unified2, database).
+
+Snort Configuration Basics
+- Snort 3 uses two main configuration files to help users get started quickly:
+  - snort.lua – The main configuration file and contains the following files
+    - Network Variables – Define IP ranges or interfaces to monitor
+    - Decoder Configuration – Controls how raw packets are interpreted
+    - Detection Engine – Sets rules and logic for identifying threats
+    - Dynamic Libraries – Loads additional Snort modules/plugins
+    - Preprocessors – Analyze specific protocols or behaviors
+    - Output Plugins – Manage how alerts/logs are stored
+    - Rule Set Customization – Tailor which rules are active
+    - Decoder/Preprocessor Rule Customization – Fine-tune specific rule behaviors
+    - Shared Object Rules – Allow dynamic loading of compiled rules.
+  - snort_defaults.lua – Provides default settings used by snort.lua
+- These files offer a ready-made framework to help set up Snort efficiently
