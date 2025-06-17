@@ -458,3 +458,76 @@ Snort Configuration Basics
     - Shared Object Rules – Allow dynamic loading of compiled rules.
   - snort_defaults.lua – Provides default settings used by snort.lua
 - These files offer a ready-made framework to help set up Snort efficiently
+
+Snort Inputs
+- -r: tells Snort to read and analyze a saved packet capture file instead of monitoring live network traffic
+  - This is useful for offline analysis, rule testing, or troubleshooting
+  - Runs Snort in passive mode — it inspects packets but doesn't block or interfere
+  - Ideal for learning, debugging rules, and analyzing captured incidents
+  - E.g. sudo snort -c /root/snorty/etc/snort/snort.lua --daq-dir /usr/local/lib/daq -r /home/htb-student/pcaps/icmp.pcap
+- -i: specifies which network interface(s) Snort should monitor
+  - This puts Snort into real-time detection mode, analyzing packets as they pass through the interface
+  - Enables live traffic inspection, allowing Snort to alert (or block) based on rule matches in real time
+  - Useful for production IDS/IPS setups or real-time testing
+  - E.g. sudo snort -c /root/snorty/etc/snort/snort.lua --daq-dir /usr/local/lib/daq -i ens160
+ 
+Snort Rules
+- Snort rules consist of two main parts: a rule header and rule options, and are structurally similar to Suricata rules
+- Despite the similarities, it is recommended to study Snort-specific rule writing from:
+  - Snort Documentation: https://docs.snort.org/
+  - Suricata’s Differences from Snort: https://docs.suricata.io/en/latest/rules/differences-from-snort.html
+- Sources for the latest rules:
+  - Official Snort website
+  - Emerging Threats website
+ 
+Managing Rules in Snort Deployments
+Rules can be managed flexibly in Snort by embedding rules in the snort.lua file using the ips module (e.g., local.rules located at /home/htb-student)
+- sudo vim /root/snorty/etc/snort/snort.lua
+
+Command-Line Rule Integration Options
+To load a single rule file:
+- Use the -R option: snort -c snort.lua -R /path/to/rules/file.rules
+To load a directory of rule files:
+- Use the --rule-path option: snort -c snort.lua --rule-path /path/to/rules/directory
+
+
+Snort Outputs
+- Basic Statistics (Generated on Shutdown)
+  - Packet Statistics: shows counts from DAQ and decoders (e.g., total received packets, UDP packets)
+  - Module Statistics: peg counts indicating how often each module observes or performs certain actions (e.g., processed HTTP GET requests)
+  - File Statistics: breaks down file types, total bytes, and detected signatures
+  - Summary Statistics: includes runtime duration, packets processed per second, and profiling data if enabled
+- Alerts
+  - Must enable alert output with the -A option to see detection events
+  - Available alert formats:
+    - -A cmg: Combines -A fast -d -e to show alert info, packet headers, and payload
+    - -A u2: Uses the Unified2 format for logging alerts and packets in binary format (for post-processing)
+    - -A csv: Outputs in CSV format; great for custom analysis and automation
+  - To list all available alert output types:
+    - snort --list-plugins | grep logger
+- Performance Statistics
+  - perf_monitor module: captures peg counts during runtime, helpful for real-time external monitoring
+  - profiler module: tgracks CPU/memory usage per module/rule. Output appears in Summary Statistics at shutdown and is used for performance tuning.
+- View alerts in cmg format using a pcap file:
+  - sudo snort -c /root/snorty/etc/snort/snort.lua --daq-dir /usr/local/lib/daq -r /home/htb-student/pcaps/icmp.pcap -A cmg
+- Use a .rules file that is not included in snort.lua:
+  - sudo snort -c /root/snorty/etc/snort/snort.lua --daq-dir /usr/local/lib/daq -r /home/htb-student/pcaps/icmp.pcap -R /home/htb-student/local.rules -A cmg
+
+Snort Key Features
+Key features that bolster Snort's effectiveness include:
+- Deep packet inspection, packet capture, and logging
+- Intrusion detection
+- Network Security Monitoring
+- Anomaly detection
+- Support for multiple tenants
+- Both IPv6 and IPv4 are supported
+
+### Walkthrough
+Q1. There is a file named wannamine.pcap in the /home/htb-student/pcaps directory. Run Snort on this PCAP file and enter how many times the rule with sid 1000001 was triggered as your answer.
+- Run this command:
+  - sudo snort -c /root/snorty/etc/snort/snort.lua --daq-dir /usr/local/lib/daq -r /home/htb-student/pcaps/wannamine.pcap -A u2
+- Scroll down to 'Detection' section
+- Answer is: 234
+- Note
+  - A better method is to output to a file and run this command to return to right number of times the alarm is triggered. In this task only the sid:1000001 was triggered and no other alerts.
+    - grep "sid:1000001" /var/log/snort/alert_fast.log | wc -l
