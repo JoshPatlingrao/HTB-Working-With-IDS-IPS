@@ -490,7 +490,6 @@ To load a single rule file:
 To load a directory of rule files:
 - Use the --rule-path option: snort -c snort.lua --rule-path /path/to/rules/directory
 
-
 Snort Outputs
 - Basic Statistics (Generated on Shutdown)
   - Packet Statistics: shows counts from DAQ and decoders (e.g., total received packets, UDP packets)
@@ -531,3 +530,91 @@ Q1. There is a file named wannamine.pcap in the /home/htb-student/pcaps director
 - Note
   - A better method is to output to a file and run this command to return to right number of times the alarm is triggered. In this task only the sid:1000001 was triggered and no other alerts.
     - grep "sid:1000001" /var/log/snort/alert_fast.log | wc -l
+
+## Snort Rule Development
+### Notes
+- Snort rules are used to detect and flag potentially malicious activity in network traffic
+- They are made up of two parts: a rule header and rule options
+- Snort rules are similar to Suricata rules, but there are important differences
+- It is recommended to study Snort rule writing using official resources:
+  - Snort Documentation: https://docs.snort.org/
+  - Suricata documentation on rule differences: https://docs.suricata.io/en/latest/rules/differences-from-snort.html
+ 
+Snort Rule Development Example 1: Detecting Ursnif (Inefficiently)
+- alert tcp any any -> any any (msg:"Possible Ursnif C2 Activity"; flow:established,to_server; content:"/images/", depth 12; content:"_2F"; content:"_2B"; content:"User-Agent|3a 20|Mozilla/4.0 (compatible|3b| MSIE 8.0|3b| Windows NT"; content:!"Accept"; content:!"Cookie|3a|"; content:!"Referer|3a|"; sid:1000002; rev:1;)
+  - Detects certain variants of Ursnif malware
+  - Considered inefficient due to missing HTTP sticky buffers
+- Breakdown:
+  - flow:established,to_server;
+    - Matches established TCP connections where data flows from client to server
+  - content:"/images/", depth 12;
+    - Looks for "/images/" within the first 12 bytes of the payload
+  - content:"_2F"; and content:"_2B";
+    - Searches for the strings "_2F" and "_2B" anywhere in the payload
+  - content:"User-Agent|3a 20|Mozilla/4.0 (compatible|3b| MSIE 8.0|3b| Windows NT";
+    - Detects a specific User-Agent string, |3a 20| = : and |3b| = ;
+  - content:!"Accept"; content:!"Cookie|3a|"; content:!"Referer|3a|";
+    - Ensures the absence of standard HTTP headers, Accept, Cookie: and Referer:
+
+Exercise
+- The rule is found in: /home/htb-student/local.rules
+- To test:
+  - Uncomment the rule in local.rules
+  - Run Snort with the following command: sudo snort -c /root/snorty/etc/snort/snort.lua --daq-dir /usr/local/lib/daq -R /home/htb-student/local.rules -r /home/htb-student/pcaps/ursnif.pcap -A cmg
+- Examine both the ursnif.pcap file in Wireshark and the Snort rule itself
+
+Snort Rule Development Example 2: Detecting Cerber
+- alert udp $HOME_NET any -> $EXTERNAL_NET any (msg:"Possible Cerber Check-in"; dsize:9; content:"hi", depth 2, fast_pattern; pcre:"/^[af0-9]{7}$/R"; detection_filter:track by_src, count 1, seconds 60; sid:2816763; rev:4;)
+  - Detects Cerber ransomware check-in activity using UDP payload characteristics
+- Breakdown:
+  - $HOME_NET any -> $EXTERNAL_NET any
+    - Applies to UDP traffic from any port in the home network to any port on external networks
+  - dsize:9;
+    - Matches UDP datagrams with exactly 9 bytes of payload data.
+  - content:"hi", depth 2, fast_pattern;
+    - Looks for the string "hi" in the first 2 bytes of the payload
+    - fast_pattern tells Snort to use this match as the initial search, improving performance
+  - pcre:"/^[af0-9]{7}$/R";
+    - Uses a Perl Compatible Regular Expression to match:
+      - Exactly 7 characters (from the set a-f and 0-9),
+      - Beginning to end of the payload after "hi".
+  - detection_filter:track by_src, count 1, seconds 60;
+    - Controls alerting to avoid noise:
+      - Tracks by source IP
+      - Alert only if more than 1 event occurs within 60 seconds from the same source
+
+
+Snort Rule Development Example 3: Detecting Patchwork
+- alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"OISF TROJAN Targeted AutoIt FileStealer/Downloader CnC Beacon"; flow:established,to_server; http_method; content:"POST"; http_uri; content:".php?profile="; http_client_body; content:"ddager=", depth 7; http_client_body; content:"&r1=", distance 0; http_header; content:!"Accept"; http_header; content:!"Referer|3a|"; sid:10000006; rev:1;)
+  - Detects Patchwork APT malware C2 beaconing activity
+  - Uses HTTP sticky buffers to more accurately parse HTTP elements
+- Breakdown
+  - flow:established,to_server;
+    - Targets established connections with data flowing from client to server.
+  - http_method; content:"POST";
+    - Matches HTTP requests using the POST method.
+  - http_uri; content:".php?profile=";
+    - Looks for URIs containing the string .php?profile=.
+  - http_client_body; content:"ddager=", depth 7;
+    - Searches in the HTTP request body for ddager= within the first 7 bytes.
+  - http_client_body; content:"&r1=", distance 0;
+    - Searches for &r1= immediately after the previous match (distance 0).
+  - http_header; content:!"Accept";
+    - Ensures absence of the Accept HTTP header.
+  - http_header; content:!"Referer|3a|";
+    - Ensures absence of the Referer: header (|3a| = :)
+   
+Snort Rule Development Example 4: Detecting Patchwork (SSL)
+- alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"Patchwork SSL Cert Detected"; flow:established,from_server; content:"|55 04 03|"; content:"|08|toigetgf", distance 1, within 9; classtype:trojan-activity; sid:10000008; rev:1;)
+  - Detects Patchwork APT activity based on SSL certificate patterns.
+  - Specifically looks for malicious Common Name (CN) field content in X.509 certificates
+- Breakdown
+  - flow:established,from_server;
+    - Targets established TCP flows where traffic is coming from the server.
+  - content:"|55 04 03|";
+    - Looks for the hex sequence 55 04 03, which is the ASN.1 tag for the Common Name field in X.509 SSL/TLS certificates.
+  - content:"|08|toigetgf", distance 1, within 9;
+    - Searches for the string toigetgf following the Common Name tag.
+    - |08|: denotes the length prefix (8 bytes).
+    - distance 1: means the search begins 1 byte after the previous match.
+    - within 9 limits the match to 9 bytes forward from the start of this content.
