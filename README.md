@@ -618,3 +618,102 @@ Snort Rule Development Example 4: Detecting Patchwork (SSL)
     - |08|: denotes the length prefix (8 bytes).
     - distance 1: means the search begins 1 byte after the previous match.
     - within 9 limits the match to 9 bytes forward from the start of this content.
+
+### Walkthrough
+Q1. There is a file named log4shell.pcap in the /home/htb-student/pcaps directory, which contains network traffic related to log4shell exploitation attempts, where the payload is embedded within the user agent. Enter the keyword that should be specified right before the content keyword of the rule with sid 10000098 within the local.rules file so that an alert is triggered as your answer. Answer format: [keyword];
+- Answer is: http_header;
+
+## Zeek Fundamentals
+### Notes
+What is Zeek?
+- An open-source network traffic analyzer
+- Primarily used to inspect all network traffic for suspicious or malicious activity.
+- Also useful for:
+  - Troubleshooting network issues
+  - Performing network measurements
+
+Capabilities & Output
+- Upon deployment, it generates a wide range of log files valuable to blue teams
+- Logs include: connection records, DNS queries and responses, HTTP sessions, other application-layer activities
+
+Scripting Language
+- Enables creation of custom Zeek scripts, similar to writing Suricata rules.
+- Allows: custom logic development, intrusion detection strategies, extensive platform customization and extension
+
+Why Zeek Stands Out
+- Not a traditional signature-based IDS.
+- Supports: semantic misuse detection, anomaly detection, behavioral analysis
+- Can run on standard hardware, making it accessible and flexible.
+
+Operation Modes
+- Fully passive traffic analysis
+- libpcap interface for packet capture
+- Real-time and offline (e.g., PCAP-based) analysis
+- Cluster support for large-scale deployments
+
+Architecture Overview
+- Comprised of two main components:
+  - Event Engine (Core)
+    - Converts raw packet streams into high-level events
+    - Events are:
+      - Policy-neutral (descriptive, not interpretive).
+      - Represent network activities (e.g., an HTTP request becomes an http_request event).
+    - Does not analyze or judge the event’s security implications (e.g., whether a port is suspicious).
+  - Script Interpreter
+    - Processes events using Zeek scripts written in Zeek’s scripting language.
+    - Responsible for:
+      - Evaluating and responding to events
+      - Implementing the site’s security policies
+      - Defining event handlers to trigger actions on specific events
+
+Event Handling Workflow
+- Events are:
+  - Queued in order (first-come, first-served)
+  - Passed to the script interpreter for processing
+ 
+Event Definitions
+- Most events are defined in .bif files
+- Located in: /scripts/base/bif/plugins/
+- For a full list of available events: https://docs.zeek.org/en/stable/scripts/base/bif/
+
+Logging
+- When analyzing PCAP files offline, logs are stored in the current directory
+- Zeek produces a wide range of logs, each focused on different protocols or activities
+  - conn.log – Records connection details (IP, TCP, UDP, ICMP)
+  - dns.log – Logs DNS queries and responses
+  - http.log – Captures HTTP requests and responses
+  - ftp.log – Contains FTP session details
+  - smtp.log – Logs SMTP transactions (e.g. sender/recipient info)
+- For full focumentation on logs: https://docs.zeek.org/en/master/logs/index.html
+
+Log Compression & Storage
+- Logs are gzip-compressed every hour by default
+- Older logs are moved to folders named with the format YYYY-MM-DD/
+- To handle compressed logs:
+  - Use gzcat to print them.
+  - Use zgrep to search through them.
+- For more examples: https://blog.rapid7.com/2016/06/02/working-with-bro-logs-queries-by-example/
+
+Working with Zeek Logs
+- Use standard Unix tools like: cat or grep
+- Zeek also provides zeek-cut, a specialized utility to:
+  - Extract specific columns from log files
+  - Work with stdin, pipelines, or redirected input
+ 
+Resources
+- Examples and scripting basics: https://docs.zeek.org/en/stable/examples/index.html
+- Quick start guide: https://docs.zeek.org/en/stable/quickstart/index.html
+
+Key Features
+- Comprehensive logging of network activities
+- Analysis of application-layer protocols (irrespective of the port, covering protocols like HTTP, DNS, FTP, SMTP, SSH, SSL, etc.)
+- Ability to inspect file content exchanged over application-layer protocols
+- IPv6 support
+- Tunnel detection and analysis
+- Capability to conduct sanity checks during protocol analysis
+- IDS-like pattern matching
+- Powerful, domain-aware scripting language that allows for expressing arbitrary analysis tasks and managing network state over time
+- Interfacing that outputs to well-structured ASCII logs by default and offers alternative backends for ElasticSearch and DataSeries
+- Real-time integration of external input into analyses
+- External C library for sharing Zeek events with external programs
+- Capability to trigger arbitrary external processes from within the scripting language
