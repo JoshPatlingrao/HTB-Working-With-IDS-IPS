@@ -737,33 +737,41 @@ Benefits
 - Supports continuous improvement of your security posture over time.
 
 Intrusion Detection With Zeek Example 1: Detecting Beaconing Malware
+
 What is Beaconing?
 - A technique used by malware to communicate with C2 servers.
 - Typically involves regular, patterned outbound connections.
 - Common goals: receive instructions and exfiltrate data.
+
 Detecting Beaconing
 - Analyze connection logs (conn.log) for:
   - Repetitive connections to the same IP/domain.
   - Consistent data sizes in sent packets.
   - Regular connection intervals (e.g., every 5 seconds).
 - These signs may indicate beaconing behavior.
+
 Zeek Command for Analysis
 - /usr/local/zeek/bin/zeek -C -r /home/htb-student/pcaps/psempire.pcap
   - Processes the psempire.pcap file with Zeek in offline mode.
+
 View the Logs
 - cat conn.log
   - Examines connection-level logs for suspicious patterns.
+
 Observed Behavior
 - Regular connections to 51.15.197.127:80 every ~5 seconds.
 - This pattern is a strong indicator of beaconing.
 - The traffic is associated with PowerShell Empire, which beacons every 5 seconds by default.
+
 Next Steps
 - Use Wireshark to further inspect the psempire.pcap file.
 
 Intrusion Detection With Zeek Example 2: Detecting DNS Exfiltration
+
 Detecting Data Exfiltration
 - Data exfiltration often resembles normal traffic, making it hard to detect.
 - Zeek enables deep analysis to uncover suspicious patterns and behaviors.
+
 Useful Zeek Logs
 - files.log:
   - Detects large file transfers to unusual destinations or non-standard ports.
@@ -771,21 +779,27 @@ Useful Zeek Logs
   - Help spot covert exfiltration methods like:
     - HTTP POSTs to shady domains.
     - DNS tunneling using encoded data in subdomains.
+
 File Reassembly
 - Zeek can reassemble files transferred over the network.
 - Useful to identify what type of data is being exfiltrated, regardless of protocol.
+
 Analysis Command
 - /usr/local/zeek/bin/zeek -C -r /home/htb-student/pcaps/dnsexfil.pcapng
   - Analyzes the dnsexfil.pcapng file using Zeek in offline mode.
+
 View DNS Log
 - cat dns.log
   - Reveals DNS queries and responses in the capture.
+
 Extract Queried Domains
 - cat dns.log | /usr/local/zeek/bin/zeek-cut query | cut -d . -f1-7
   - Filters and extracts (sub)domain patterns from DNS queries.
+
 Behavioral Observation
 - Domain letsgohunt.online is queried via numerous subdomains.
 - Pattern is unusual and not typical for normal DNS behavior.
 - Suggests potential DNS-based data exfiltration.
+
 Next Steps
 - Open the PCAP in Wireshark for deeper packet inspection.
