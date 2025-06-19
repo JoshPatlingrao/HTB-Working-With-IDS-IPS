@@ -803,3 +803,50 @@ Behavioral Observation
 
 Next Steps
 - Open the PCAP in Wireshark for deeper packet inspection.
+
+Intrusion Detection With Zeek Example 3: Detecting TLS Exfiltration
+
+Process
+- Run Zeek on the PCAP file: /usr/local/zeek/bin/zeek -C -r /home/htb-student/pcaps/tlsexfil.pcap
+- Check the connection logs: cat conn.log
+- Use a one-liner to analyze data exfiltration: cat conn.log | /usr/local/zeek/bin/zeek-cut id.orig_h id.resp_h orig_bytes | sort | grep -v -e '^$' | grep -v '-' | datamash -g 1,2 sum 3 | sort -k 3 -rn | head -10
+  - Breakdown:
+    - cat conn.log
+      - Displays all Zeek connection logs (details of network connections).
+    - /usr/local/zeek/bin/zeek-cut id.orig_h id.resp_h orig_bytes
+      - Extracts the source IP, destination IP, and bytes sent by the source.
+    - sort
+      - Sorts the lines (default: ascending by source IP).
+    - grep -v -e '^$'
+      - Removes any empty lines from the output.
+    - grep -v '-'
+      - Removes lines containing dashes (missing values).
+    - datamash -g 1,2 sum 3
+      - Groups by source and destination IPs, and sums the total bytes sent.
+    - sort -k 3 -rn
+      - Sorts results by total bytes sent (descending order).
+    - head -10
+      - Displays the top 10 results (most data sent).
+
+Observation
+- Roughly 270 MB of data were sent to the IP 192.168.151.181.
+
+### Walkthrough
+Q1. There is a file named printnightmare.pcap in the /home/htb-student/pcaps directory, which contains network traffic related to the PrintNightmare (https://labs.jumpsec.com/printnightmare-network-analysis/) vulnerability. Enter the zeek log that can help us identify the suspicious spooler functions as your answer. Answer format: _.log
+- SSH to the machine
+- Run Zeek
+  - /usr/local/zeek/bin/zeek -C -r /home/htb-student/pcaps/printnightmare.pcap
+- There should be logs now in the main folder, run 'ls' to see what kind of logs Zeek generated
+- Check them one by one but only dce_rpc will identify the suspicious spooler functions - RpcEnumPrinterDrivers and RpcAddPrinterDriverEx
+- Answer is: dce_rpc.log
+
+Q2. There is a file named revilkaseya.pcap in the /home/htb-student/pcaps directory, which contains network traffic related to the REvil ransomware Kaseya supply chain attack. Enter the total number of bytes that the victim has transmitted to the IP address 178.23.155.240 as your answer.
+- SSH to the machine
+- Run Zeek
+  - /usr/local/zeek/bin/zeek -C -r /home/htb-student/pcaps/revilkaseya.pcap
+- There should be logs now in the main folder, run 'ls' to see what kind of logs Zeek generated
+- Check them on by one, but the log you need is conn.log, but since there's large volume of data, it can't print it all
+  - Run this to see all the traffic to 178.23.155.240
+    - cat conn.log | /usr/local/zeek/bin/zeek-cut id.orig_h id.resp_h orig_bytes
+- There should be two entries, one with 1702 bytes and the other with 609 bytes
+- Answer is: 2311
