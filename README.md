@@ -621,6 +621,7 @@ Snort Rule Development Example 4: Detecting Patchwork (SSL)
 
 ### Walkthrough
 Q1. There is a file named log4shell.pcap in the /home/htb-student/pcaps directory, which contains network traffic related to log4shell exploitation attempts, where the payload is embedded within the user agent. Enter the keyword that should be specified right before the content keyword of the rule with sid 10000098 within the local.rules file so that an alert is triggered as your answer. Answer format: [keyword];
+- Refer to the previous http example
 - Answer is: http_header;
 
 ## Zeek Fundamentals
@@ -850,3 +851,69 @@ Q2. There is a file named revilkaseya.pcap in the /home/htb-student/pcaps direct
     - cat conn.log | /usr/local/zeek/bin/zeek-cut id.orig_h id.resp_h orig_bytes
 - There should be two entries, one with 1702 bytes and the other with 609 bytes
 - Answer is: 2311
+
+## Skills Assessment - Suricata
+### Notes
+Suricata Rule Development Exercise: Detecting WMI Execution (Through WMIExec)
+- PCAP Source: [GitHub - elcabezzonn/Pcaps](https://github.com/elcabezzonn/Pcaps)
+- Attack Description & Detection Reference: https://labs.withsecure.com/publications/attack-detection-fundamentals-discovery-and-lateral-movement-lab-5
+
+What is WMI (Windows Management Instrumentation)?
+- A Windows OS feature for:
+  - Managing system components.
+  - Executing code locally or remotely.
+- Highly attractive for attackers seeking stealthy remote execution methods.
+
+Attacker Techniques (WMI Abuse Example)
+- Use of wmiexec to execute commands remotely.
+- Typically relies on SMB and DCOM protocols to:
+  - Communicate with remote systems.
+  - Trigger WMI operations over the network.
+
+Example WMI Abuse (Creating a Remote Process)
+- The attacker:
+  - Creates a Win32_ProcessStartup instance.
+  - Sets its properties (e.g., environment for execution).
+  - Calls the Create method to spawn a new process such as:
+    - cmd.exe
+    - powershell.exe
+
+Detection Focus
+- Monitor SMB/DCOM traffic for anomalies or unexpected usage.
+- Look for patterns of remote process creation via Win32_Process.
+
+### Walkthrough
+Q1. There is a file named pipekatposhc2.pcap in the /home/htb-student/pcaps directory, which contains network traffic related to WMI execution. Add yet another content keyword right after the msg part of the rule with sid 2024233 within the local.rules file so that an alert is triggered and enter the specified payload as your answer. Answer format: C____e
+- SSH to the machine
+- Read up on the resoure link for WMIExec
+  - Go to the additional link within the article, expanding on the Win32_ProcessStartup object
+  - You will see the answer there.
+- The rule can be found with: sudo nano /home/htb-student/local.rules
+- To apply the answer.
+- Answer is: Create
+
+## Skills Assessment - Snort
+### Notes
+Snort Rule Development Exercise: Detecting Overpass-the-Hash
+- PCAP: [GitHub - elcabezzonn/Pcaps](https://github.com/elcabezzonn/Pcaps)
+- Attack details: [labofapenetrationtester.com](http://www.labofapenetrationtester.com/2017/08/week-of-evading-microsoft-ata-day2.html)
+
+Attack: Overpass-the-Hash (a.k.a. Pass-the-Key)
+- An attacker uses a stolen NTLM hash or Kerberos key instead of the user's plaintext password.
+- The goal is to create a valid Kerberos TGT (Ticket-Granting Ticket) and gain access to Active Directory resources.
+- The attacker crafts a Kerberos AS-REQ (Authentication Service Request) using the stolen hash.
+
+How the Attack Works
+- Normally, a Kerberos AS-REQ includes:
+  - A PRE-AUTH field with an Enc-Timestamp encrypted using the user's password hash.
+- In this attack:
+  - The attacker bypasses the Enc-Timestamp process.
+  - The NTLM hash is directly used to build the Kerberos AS-REQ.
+
+Detection Opportunity
+- Legitimate AS-REQ from modern Windows:
+  - Uses AES256-CTS-HMAC-SHA1-96 encryption for the Enc-Timestamp.
+- Overpass-the-Hash attack:
+  - Uses RC4-HMAC encryption (an older method) because it's compatible with NTLM hashes.
+- Therefore, seeing AS-REQs using RC4-HMAC in environments where AES is expected may indicate a possible Overpass-the-Hash attack.
+
