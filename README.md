@@ -930,3 +930,40 @@ Q1. There is a file named wannamine.pcap in the /home/htb-student/pcaps director
   - sudo snort -c /root/snorty/etc/snort/snort.lua --daq-dir /usr/local/lib/daq -R /home/htb-student/local.rules -r /home/htb-student/pcaps/wannamine.pcap -v -A cmg
 - Scan all the similar hex codes in snort.raw[315]
 - Answer is: 17
+
+## Skills Assessment - Zeek
+### Notes
+Intrusion Detection With Zeek: Detecting Gootkit's SSL Certificate
+- PCAP Source: https://www.malware-traffic-analysis.net/2016/07/08/index.html
+- Threats Involved:
+  - Neutrino Exploit Kit: Initial infection vector.
+  - Gootkit Trojan: Follow-up payload; a banking trojan using SSL/TLS for communication.
+
+Detection Opportunity: SSL Certificate
+- After exploitation, Gootkit uses encrypted SSL/TLS traffic.
+- The SSL certificate in use is self-signed or from an untrusted CA.
+- Key details:
+  - The certificate’s Common Name (CN) is "My Company Ltd."
+  - This generic name stands out and can be used as a detection signature.
+
+Why This Matters
+- Cybercriminals often use:
+  - Self-signed certificates or
+  - Certificates with bogus details
+- This behavior offers a chance for detection via Zeek's ssl.log.
+
+Zeek Use Case
+- Use Zeek to analyze SSL/TLS certificates in network traffic.
+- Search for certificates with - Common Name: "My Company Ltd."
+- This can help flag Gootkit-related infections when traditional payload inspection fails (due to encryption).
+
+### Walkthrough
+Q.1 There is a file named neutrinogootkit.pcap in the /home/htb-student/pcaps directory, which contains network traffic related to the Neutrino exploit kit sending Gootkit malware. Enter the x509.log field name that includes the "MyCompany Ltd." trace as your answer.
+- SSH to machine
+- Run Zeek on the .pcap file
+  - /usr/local/zeek/bin/zeek -C -r /home/htb-student/pcaps/neutrinogootkit.pcap
+- Search for the x509.log with 'ls'
+- Open the file but try to format it so it's easier to understand
+  - sudo cat x509.log | sed 's/\t/\n/g'
+- Answer is: certificate.subject
+  - Based on extra material, this should also be the same for certificate.issuer since it's a self-issued certificate
