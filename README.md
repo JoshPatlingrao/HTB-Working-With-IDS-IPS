@@ -917,3 +917,16 @@ Detection Opportunity
   - Uses RC4-HMAC encryption (an older method) because it's compatible with NTLM hashes.
 - Therefore, seeing AS-REQs using RC4-HMAC in environments where AES is expected may indicate a possible Overpass-the-Hash attack.
 
+### Walkthrough
+Q1. There is a file named wannamine.pcap in the /home/htb-student/pcaps directory, which contains network traffic related to the Overpass-the-hash technique which involves Kerberos encryption type downgrading. Replace XX with the appropriate value in the last content keyword of the rule with sid XXXXXXX within the local.rules file so that an alert is triggered as your answer.
+- SSH to the machine
+- Look for the 'local.rules', use 'ls'
+- Open the local.rules
+  - sudo nano local.rules
+- Edit the rules for the Kerberos Downgrade attack, by removing the XX in the content: “|A0 03 02 01 XX|” to ensure that it will still look for similar hex codes when it triggers the alert
+  - alert tcp $HOME_NET any → any 88 (msg: “Kerberos Ticket Encryption Downgrade to RC4 Detected”; flow: no_stream, established, to_server; content: “|A1 03 02 01 05 A2 03 02 01 0A|”, offset 12, depth 10; content: “|A1 03 02 01 02|”, distance 5, within 6; content: “|A0 03 02 01 XX|”, distance 6, within 6; content: “krbtgt”, distance 0; sid:9999999;)
+- Uncomment the Kerberos Downgrade attack and comment the other to make sure it's the only active rule.
+- Run snort
+  - sudo snort -c /root/snorty/etc/snort/snort.lua --daq-dir /usr/local/lib/daq -R /home/htb-student/local.rules -r /home/htb-student/pcaps/wannamine.pcap -v -A cmg
+- Scan all the similar hex codes in snort.raw[315]
+- Answer is: 17
